@@ -135,7 +135,10 @@ export class BaseExecutor {
 
       // Abort if upstream doesn't return response headers within connection timeout
       const connectCtrl = new AbortController();
-      const timeoutMs = this.config?.timeoutMs || FETCH_CONNECT_TIMEOUT_MS;
+      // Priority: providerOverrides.timeoutMs (valid finite positive) > config.timeoutMs > FETCH_CONNECT_TIMEOUT_MS
+      const overrideTimeout = providerOverrides?.timeoutMs;
+      const sanitizedOverride = Number.isFinite(overrideTimeout) && overrideTimeout > 0 ? overrideTimeout : null;
+      const timeoutMs = sanitizedOverride ?? this.config?.timeoutMs ?? FETCH_CONNECT_TIMEOUT_MS;
       const connectTimer = setTimeout(() => connectCtrl.abort(new Error("fetch connect timeout")), timeoutMs);
       const mergedSignal = signal ? AbortSignal.any([signal, connectCtrl.signal]) : connectCtrl.signal;
 
